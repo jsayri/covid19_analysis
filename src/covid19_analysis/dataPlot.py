@@ -41,7 +41,7 @@ def last_daily_cases(df_data, ctry_list, num_days=3*31, rolling_win=True, df_typ
         
         if rolling_win:
             # moving average, 7 days centered in day
-            ts_c_daily = ts_c_daily.rolling(7, min_periods=1, center=True).sum()
+            ts_c_daily = ts_c_daily.rolling(7, min_periods=1, center=True).mean()
         
 
         # Plot graph for a define time interval
@@ -70,11 +70,16 @@ def last_daily_cases(df_data, ctry_list, num_days=3*31, rolling_win=True, df_typ
 
 
 # Report growth rates over time
-def growth_rates(data_ts, label = 'Cases'):
+def growth_rates(data_ts, label = 'Cases ', trend_line = False, y_range = [1, 1.07], Percentage=True):
     '''Display growth rates over time for cases/cures/fatalities for one dataset array'''
+    # fill nan values with previous values
+    data_tmp = data_ts.fillna(method='bfill')
     # calculate growth rates
-    data_tmp = np.array(data_ts, dtype=int)
-    growth_ratio = dataFun.safe_div(data_tmp[1:], data_tmp[:-1])
+    data_tmp = np.array(data_tmp, dtype=int)
+    if Percentage:  # display results as a growing percentage
+        growth_ratio = 100 * (dataFun.safe_div(data_tmp[1:], data_tmp[:-1]) -1)
+    else:
+        growth_ratio = dataFun.safe_div(data_tmp[1:], data_tmp[:-1])
     time_vector = data_ts.index
 
     # display growth ratio over time
@@ -85,16 +90,33 @@ def growth_rates(data_ts, label = 'Cases'):
             x = time_vector[1:],
             y = growth_ratio,
             marker = dict(color = 'Black', line = dict(color = 'DarkGrey', width=1.5)),
+            name = label,
         ))
 
+    if trend_line:
+        growth_ratio_ma = dataFun.mov_avg(growth_ratio, 7)
+        fig.add_trace(
+        plotly.graph_objs.Scatter(
+            mode = 'lines',
+            x = time_vector[1:],
+            y = growth_ratio_ma,
+            marker = dict(color = 'DarkRed', line = dict(color = 'DarkRed', width=1.5)),
+            name = 'data trend',
+        ))
+        
     fig.update_layout(
         plot_bgcolor='white', 
         xaxis_title = 'Time [Days]',
-        yaxis_title = 'Infection growth ratio',
-        title = label + 'growth ratio' + datetime.datetime.today().strftime(', %B %d, %Y'),
+        yaxis_title = label + ' growth ratio' + (' [%]' if Percentage else '' ),
+        title = 'Overall ' + label + 'growth rati trends' + datetime.datetime.today().strftime(', %B %d, %Y'),
         title_x = .5
         )
     fig.update_yaxes(showgrid=True, gridwidth=.3, gridcolor='gainsboro')
+
+    if Percentage:
+        fig.update_yaxes(range=[0, np.max(growth_ratio)*1.05])
+    else:
+        fig.update_yaxes(range=y_range)
 
     fig.show()
     return fig
@@ -121,6 +143,7 @@ def growing_ratio_countries(df_data, ctry_list, pop_th=100, num_days=37, df_sour
 
     # Extract timeseries & add trace to figure
     if df_source == 'JHU':
+        max_cases = 1
         for country_name in ctry_list:    
             ts_country = dataFun.get_timeseries_from_JHU(df_data, country_name)
 
@@ -129,8 +152,11 @@ def growing_ratio_countries(df_data, ctry_list, pop_th=100, num_days=37, df_sour
                 ts_country = ts_country[ts_country.index >= day_filter]
 
                 if clear_pop:   # substract first date population
-                    ts_country = ts_country - ts_country[0]
+                    ts_country -= ts_country[0]
 
+
+            if max_cases < np.max(ts_country):
+                max_cases = np.max(ts_country)
 
             fig_gr.add_trace(
             plotly.graph_objs.Scatter(
@@ -146,6 +172,8 @@ def growing_ratio_countries(df_data, ctry_list, pop_th=100, num_days=37, df_sour
             title = 'Doubling rates per country' + datetime.datetime.today().strftime(', %B %d, %Y'),
             title_x = .5
         )
+        # correct y axis
+        fig_gr.update_yaxes(range=[math.log10(pop_th), np.maximum(math.log10(max_cases)+.2, math.log10(pop_th)+3.5)])    
 
     # Display simple data overtime
     elif df_source == 'raw_data':
@@ -358,13 +386,20 @@ def disp_countries_comp(df_data, ctry_list, mask=0, plot_type='line'):
     '''
     fig = plotly.graph_objs.Figure()
 
+    ctry_max = 1
     for country in ctry_list:
         # get country timeseries
-        ctry_ts = dataFun.get_timeseries_from_JHU(df_data, country)
+        ctry_ts = dataFun.get_timeseries_from_JHU(df_data, country, verbose=False)
+
+        if ctry_max < np.max(ctry_ts):
+            ctry_max = np.max(ctry_ts)
 
         # check for time filter
         if mask is 0:
             mask = ctry_ts.index >= ctry_ts.index[0]
+        elif type(mask) == str:
+            mask = ctry_ts.index >= mask
+
 
         if plot_type == 'Bar':
             fig.add_trace(
@@ -377,7 +412,7 @@ def disp_countries_comp(df_data, ctry_list, mask=0, plot_type='line'):
         elif plot_type == 'line':
             fig.add_trace(
                 plotly.graph_objs.Scatter(
-                    mode = 'lines+markers',
+                    mode = 'lines', #'lines+markers',
                     x = ctry_ts.index[mask],
                     y = ctry_ts[mask], 
                     name = country
@@ -395,6 +430,7 @@ def disp_countries_comp(df_data, ctry_list, mask=0, plot_type='line'):
 
     # display horizontal grid lines
     fig.update_yaxes(showgrid=True, gridwidth=.3, gridcolor='gainsboro')
+    fig.update_yaxes(range=[np.log10(np.min(ctry_ts[mask])+1), np.log10(ctry_max)+.5])
 
     fig.show()
 
@@ -511,11 +547,12 @@ def disp_cum_jhu(ts_case, ts_recov, ts_death, loc_name, mask=0):
 
 
 # Generate a graph in original axis with current active cases
-def disp_daily_cases(df_data, loc_name, df_source='JHU', mask=None):
+def disp_daily_cases(df_data, loc_name, df_source='JHU', mask=None, trend=False):
     '''Display daily cases evolution for confirmed & fatalities for two different data sources. 
         df_data:    <dataframe> daily information per case
         loc_name:   <string> name of the location under study
         df_source:  <string> select the type of dataframe source
+        trend: display a trend line for each plot (default: False)
         
         '''
     if df_source == 'SPF':
@@ -573,6 +610,15 @@ def disp_daily_cases(df_data, loc_name, df_source='JHU', mask=None):
             marker = dict(color = 'CornflowerBlue', line = dict(color = 'DarkBlue', width=1.5)),
             name = 'Cases'
     ))
+    if trend:
+        cases_trend = dataFun.mov_avg(cases_d[mask], 7)
+        fig.add_trace(
+        plotly.graph_objs.Scatter(
+            x = date_time[mask],
+            y = cases_trend,
+            line = dict(color = 'CornflowerBlue', width=1.5),
+            name = 'Trend cases, 7 days mean'
+        ))
 
     # daily fatalities
     fig.add_trace(

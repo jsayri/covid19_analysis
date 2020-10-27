@@ -131,6 +131,16 @@ def safe_div(x,y):
     res[isZero] = 0
     return res
 
+# define moving mean (rolling average) based on a convolution function
+def mov_avg(data_set, periods=3, conv_mode = 'full'):
+    ''' Moving average / rolling mean, based on a convolution function
+        data_set : data to treat
+        periods : points to consider within the rolling window
+        conv_mode : select among 'valid', 'same', 'full'
+    '''
+    weights = np.ones(periods) / periods
+    return np.convolve(data_set, weights, mode=conv_mode)
+
 # Ancient function. Define a new dataframe from JHU dataframe by reshaping columns by rows and excluding some variables (lat & long)
 def recreate_df(raw_df):
     '''OLD FUNCTION: Create a dataframe based on the DF provide by the JHU repository'''
