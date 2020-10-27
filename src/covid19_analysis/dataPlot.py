@@ -206,6 +206,75 @@ def growing_ratio_countries(df_data, ctry_list, pop_th=100, num_days=37, df_sour
     fig_gr.show()
 
 
+# Plot countries growing ratio and doubling time chars
+def growing_ratio_country(df_data, pop_th=100, num_days=90, df_source=None, date_filter = None, clear_pop = False ):
+    '''Display countries cases over time compare to standards doubling-time ratios
+        df_data:    <dataframe> contain all countries daily data
+        pop_th:     <int> population threshold, allows to set chart starting point
+        num_days:   <int> set the number of days to display
+        df_source:  <str> set the dataframe data source, options are: 'JHU' (default), 'SPF', 'raw_data'
+        date_filter:<str> define a date string as a time filter, default: no filter (None)
+        clear_pop:  <bool> substract population from first day, useful if counting from a different day from first outbreak
+        
+    Graph inspired on the work or Lisa Charlotte ROST, designer & blogger at Datawrapper (March 2020)
+    https://lisacharlotterost.de/
+    Original graph from Lisa https://www.datawrapper.de/_/w6x6z/ 
+    '''
+
+    # build growing rates template
+    fig_gr = doublingtime_chart(pop_th, num_days)
+
+
+    # Extract data to plot as a function of the datasource
+    if df_source is 'datagouv':
+        ts_cases = pd.Series(data=df_data.total_cas_confirmes.fillna(0).values, index=df_data.date)
+        ts_ftlts = pd.Series(data=df_data.total_deces_hopital.fillna(0).values, index=df_data.date)
+
+    elif df_source is None:
+        raise NotImplementedError
+    
+    # post first-outbreak filters: reshape date to start from a given date
+    if not (date_filter is None):
+        ts_cases = ts_cases[ts_cases.index >= date_filter]
+        ts_ftlts = ts_ftlts[ts_ftlts.index >= date_filter]
+
+        # substract first date population, evaluate the evolution counting population growth from a given date
+        if clear_pop:   # substract first date population
+            ts_cases -= ts_cases[0]
+            ts_ftlts -= ts_ftlts[0]  
+
+    # plot the doubling rate over time
+    t_idx = ts_cases > pop_th
+    # trace cases
+    fig_gr.add_trace(
+        plotly.graph_objs.Scatter(
+            mode = 'lines+markers', #'lines'
+            x = np.arange(0, len(t_idx)),
+            y = ts_cases[t_idx],
+            name = 'Cases',
+            line=dict(color='CornflowerBlue'),
+            #marker=dict(color='CornflowerBlue')
+        ))
+    # trace fatalities
+    fig_gr.add_trace(
+        plotly.graph_objs.Scatter(
+            mode = 'lines+markers', # 'lines',
+            x = np.arange(0, len(t_idx)),
+            y = ts_ftlts[t_idx],
+            name = 'Fatalities',
+            line=dict(color='Black'),
+        ))
+    # set graph extra details
+    fig_gr.update_layout(
+        title = 'Doubling rates in a Country' + datetime.datetime.today().strftime(', %B %d, %Y'),
+        title_x = .5
+    )
+    # correct y axis
+    fig_gr.update_yaxes(range=[math.log10(pop_th), np.maximum(math.log10(np.max(ts_cases))+.2, math.log10(pop_th)+3.5)])
+    
+    fig_gr.show()
+
+
 # Explore the growing rate over time (call chart growing rate countries)
 def doublingtime_chart(pop_th=100, num_days=37):
     '''Build a doubling time chart template
@@ -442,7 +511,7 @@ def disp_cum_jhu(ts_case, ts_recov, ts_death, loc_name, mask=0):
 
 
 # Generate a graph in original axis with current active cases
-def disp_daily_cases(df_data, loc_name, df_source='JHU', mask=0):
+def disp_daily_cases(df_data, loc_name, df_source='JHU', mask=None):
     '''Display daily cases evolution for confirmed & fatalities for two different data sources. 
         df_data:    <dataframe> daily information per case
         loc_name:   <string> name of the location under study
@@ -461,6 +530,16 @@ def disp_daily_cases(df_data, loc_name, df_source='JHU', mask=0):
 
         # daily recov
         recov_d = 0
+    
+    elif df_source is 'datagouv':
+        # time vector
+        date_time = pd.DataFrame(index=df_data.date).index
+        # Daily cases       
+        cases_d = np.insert(np.diff(df_data.total_cas_confirmes).clip(0), 0, 0)
+        # daily fatalities
+        fatal_d = np.insert(np.diff(df_data.total_deces_hopital).clip(0) ,0, 0)
+        recov_d = 0 # daily recov
+
 
     elif df_source == 'JHU':
         # time vector
@@ -480,7 +559,7 @@ def disp_daily_cases(df_data, loc_name, df_source='JHU', mask=0):
         return
 
     # Check for time filter
-    if mask is 0:
+    if mask is None:
         mask = date_time >= date_time[0]
 
     # Build plot for daily variation
@@ -528,7 +607,7 @@ def disp_daily_cases(df_data, loc_name, df_source='JHU', mask=0):
 
 
 # Generate a graph in original axis with current active cases
-def disp_current_cases(df_data, loc_name, pop_factor=1):
+def disp_current_cases(df_data, loc_name, pop_factor=1, source=None):
     '''Display current cases from cumulative and fatalities 
         df_data:    <dataframe> daily information per case
         loc_name:   <string> name of the location under study
@@ -536,9 +615,15 @@ def disp_current_cases(df_data, loc_name, pop_factor=1):
         
         '''
     # Calculate current cases from confimed & fatalities
-    fat_c = np.array(df_data.deces, dtype=int)
-    fat_c[fat_c<0] = 0
-    liv_c = np.array(df_data.cas_confirmes, dtype=int) - fat_c
+    if source is 'datagouv':
+        fat_c = np.array(df_data.total_deces_hopital, dtype=int)
+        fat_c[fat_c<0] = 0
+        liv_c = np.array(df_data.total_cas_confirmes, dtype=int) - fat_c
+
+    else:        
+        fat_c = np.array(df_data.deces, dtype=int)
+        fat_c[fat_c<0] = 0
+        liv_c = np.array(df_data.cas_confirmes, dtype=int) - fat_c
     
     # Build plot for basic data display
     fig = plotly.graph_objs.Figure()
@@ -578,7 +663,7 @@ def disp_current_cases(df_data, loc_name, pop_factor=1):
 
 
 # Generate a cumulative chart for SPF datasets
-def disp_cumulative(df_data, loc_name, pop_factor=1):
+def disp_cumulative(df_data, loc_name, pop_factor=1, source=None):
     '''Routine to display the normal/log tendency of the cumulated cases
         df_data:        <dataframe> information over time for each case
         loc_name:     <string> name of the location under study
@@ -587,13 +672,20 @@ def disp_cumulative(df_data, loc_name, pop_factor=1):
                         vertical axis the multiplicative magnitude
         
         '''
+    if source is 'datagouv':
+        cases_cum = df_data.total_cas_confirmes
+        fatalities = df_data.total_deces_hopital
+    else:
+        cases_cum = df_data.cas_confirmes
+        fatalities = df_data.deces
+
     fig = plotly.graph_objs.Figure()
     # add scatter chart for confirmed cases
     fig.add_trace(
         plotly.graph_objs.Scatter(
             mode = 'lines+markers',
             x=df_data.date, 
-            y=np.array(df_data.cas_confirmes, dtype=int),  
+            y=cases_cum,  
             name = 'Confirmed cases',
             marker=dict(color='CornflowerBlue'),
     ))
@@ -602,7 +694,7 @@ def disp_cumulative(df_data, loc_name, pop_factor=1):
         plotly.graph_objs.Scatter(
             mode='lines+markers',
             x=df_data.date, 
-            y=np.array(df_data.deces, dtype=int), 
+            y=fatalities, 
             name = 'Fatalities',
             marker=dict(color='black')
     ))
