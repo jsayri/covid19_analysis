@@ -1,0 +1,9 @@
+Data scientics bilio
+
+Consideration to take before you create another chart about covid19
+https://medium.com/nightingale/ten-considerations-before-you-create-another-chart-about-covid-19-27d3bd691be8
+
+Covid 19 chart to reproduce
+https://blog.datawrapper.de/coronaviruscharts/
+display the number of cases and the rate of growing per time
+

@@ -1,0 +1,53 @@
+
+Report cases covid
+https://www.worldometers.info/coronavirus/coronavirus-cases/
+
+Article from tomas pueyo
+https://medium.com/@tomaspueyo/coronavirus-act-today-or-people-will-die-f4d3d9cd99ca
+
+
+Epidemic theory
+https://www.healthknowledge.org.uk/public-health-textbook/research-methods/1a-epidemiology/epidemic-theory
+
+Ro basic reproduction number 
+https://en.wikipedia.org/wiki/Basic_reproduction_number
+
+Ro is complex, article
+https://wwwnc.cdc.gov/eid/article/25/1/17-1901_article
+
+parameters list over time by MIDAS
+https://midasnetwork.us/covid-19/
+
+Doubling case days article, they say:
+The epidemic doubling time was 6·4 days (95% CrI 5·8–7·1).
+https://www.thelancet.com/journals/lancet/article/PIIS0140-6736(20)30260-9/fulltext
+
+doubling time cases, he say 2 to 3 days
+https://www.isglobal.org/en/-/covid-19-doubling-times-of-cases-and-deaths-in-european-countries
+what he use as a source for data estimation?
+
+doubling cases article analysis for US
+https://www.statnews.com/2020/03/10/simple-math-alarming-answers-covid-19/
+
+
+french article about the covi19
+http://alizon.ouvaton.org/Rapport1_R0_France.html
+
+French data repository and info per deparment
+https://www.santepubliquefrance.fr/maladies-et-traumatismes/maladies-et-infections-respiratoires/infection-a-coronavirus/articles/infection-au-nouveau-coronavirus-sars-cov-2-covid-19-france-et-monde
+
+web site santé publique (data.gouv.fr)
+https://www.data.gouv.fr/en/datasets/chiffres-cles-concernant-lepidemie-de-covid19-en-france/#_
+
+github
+https://github.com/opencovid19-fr/data
+
+Covid19 is mutating
+https://academic.oup.com/nsr/advance-article/doi/10.1093/nsr/nwaa036/5775463
+
+Covid19 epidemic calculator, github based
+http://gabgoh.github.io/COVID/index.html
+
+
+China change the way of case detection, hence a change in the curve was observe. Here explanations
+https://www.statnews.com/2020/02/20/experts-say-confusion-over-coronavirus-case-count-in-china-is-muddying-picture-of-spread/
