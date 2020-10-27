@@ -453,17 +453,11 @@ def disp_daily_cases(df_data, loc_name, df_source='JHU', mask=0):
         # time vector
         date_time = pd.DataFrame(index=df_data.date).index
 
-        # Daily cases
-        data_tmp = np.array(df_data.cas_confirmes, dtype=int)
-        data_tmp[data_tmp<0] = 0
-        cases_d = data_tmp[1:]-data_tmp[:data_tmp.size-1]
-        cases_d = np.insert(cases_d, 0, data_tmp[0]).clip(min=0)
+        # Daily cases       
+        cases_d = np.insert(np.diff(df_data.cas_confirmes).clip(0), 0, 0)
 
         # daily fatalities
-        data_tmp = np.array(df_data.deces, dtype=int)
-        data_tmp[data_tmp<0] = 0
-        death_d = data_tmp[1:]-data_tmp[:data_tmp.size-1]
-        death_d = np.insert(death_d, 0, data_tmp[0]).clip(min=0)
+        fatal_d = np.insert(np.diff(df_data.deces).clip(0) ,0, 0)
 
         # daily recov
         recov_d = 0
@@ -473,23 +467,14 @@ def disp_daily_cases(df_data, loc_name, df_source='JHU', mask=0):
         date_time = df_data.index
 
         # Daily cases
-        data_tmp = np.array(df_data.cases, dtype=int)
-        data_tmp[data_tmp<0] = 0
-        cases_d = data_tmp[1:]-data_tmp[:data_tmp.size-1]
-        cases_d = np.insert(cases_d, 0, data_tmp[0]).clip(min=0)
+        cases_d = np.insert(np.diff(df_data.cases).clip(0), 0, 0)
 
         # Daily fatalities
-        data_tmp = np.array(df_data.death, dtype=int)
-        data_tmp[data_tmp<0] = 0
-        death_d = data_tmp[1:]-data_tmp[:data_tmp.size-1]
-        death_d = np.insert(death_d, 0, data_tmp[0]).clip(min=0)
+        fatal_d = np.insert(np.diff(df_data.death).clip(0) ,0, 0)
 
         # Daily recovery
-        data_tmp = np.array(df_data.recov, dtype=int)
-        data_tmp[data_tmp<0] = 0
-        recov_d = data_tmp[1:]-data_tmp[:data_tmp.size-1]
-        recov_d = np.insert(recov_d, 0, data_tmp[0]).clip(min=0)
-        
+        recov_d = np.insert(np.diff(df_data.recov).clip(0) ,0, 0)
+
     else:
         print('Error: Not valid value for df_source')
         return
@@ -514,7 +499,7 @@ def disp_daily_cases(df_data, loc_name, df_source='JHU', mask=0):
     fig.add_trace(
         plotly.graph_objs.Bar(
             x = date_time[mask],
-            y = death_d[mask],
+            y = fatal_d[mask],
             marker = dict(color = 'DimGray', line = dict(color = 'Black', width=1.5)),
             name = 'Fatalities'
     ))
@@ -561,7 +546,7 @@ def disp_current_cases(df_data, loc_name, pop_factor=1):
     fig.add_trace(
         plotly.graph_objs.Bar(
             x=df_data.date, 
-            y=liv_c / pop_factor,  
+            y=np.maximum(0, liv_c) / pop_factor,  
             name = 'On going cases',
             marker=dict(color='CornflowerBlue')
     ))
@@ -569,7 +554,7 @@ def disp_current_cases(df_data, loc_name, pop_factor=1):
     fig.add_trace(
         plotly.graph_objs.Bar(
             x=df_data.date, 
-            y=fat_c / pop_factor, 
+            y=np.maximum(0, fat_c) / pop_factor, 
             name = 'Fatalities',
             marker=dict(color='Black')
     ))
