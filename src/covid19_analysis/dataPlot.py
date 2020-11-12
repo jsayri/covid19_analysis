@@ -730,6 +730,7 @@ def disp_cumulative(df_data, loc_name, pop_factor=1, source=None):
     fig.add_trace(
         plotly.graph_objs.Scatter(
             mode = 'lines+markers',
+            #mode = 'markers',
             x=df_data.date, 
             y=cases_cum,  
             name = 'Confirmed cases',
@@ -739,6 +740,7 @@ def disp_cumulative(df_data, loc_name, pop_factor=1, source=None):
     fig.add_trace(
         plotly.graph_objs.Scatter(
             mode='lines+markers',
+            #mode='markers',
             x=df_data.date, 
             y=fatalities, 
             name = 'Fatalities',
