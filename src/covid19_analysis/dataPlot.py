@@ -628,6 +628,15 @@ def disp_daily_cases(df_data, loc_name, df_source='JHU', mask=None, trend=False)
             marker = dict(color = 'DimGray', line = dict(color = 'Black', width=1.5)),
             name = 'Fatalities'
     ))
+    if trend:
+        cases_trend = dataFun.mov_avg(fatal_d[mask], 7)
+        fig.add_trace(
+        plotly.graph_objs.Scatter(
+            x = date_time[mask],
+            y = cases_trend,
+            line = dict(color = 'DimGray', width=1.5),
+            name = 'Trend fatalities, 7 days mean'
+        ))
 
     if df_source is 'JHU': # exclude SPF
         # daily recoveries
